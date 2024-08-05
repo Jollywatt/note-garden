@@ -35,7 +35,7 @@ The algorithm terminates in $n$ steps, where each step involves a single matrix 
 It works like magic!
 
 
-#lovelace.pseudocode-list(title: smallcaps[Fadeev-LeVerrier algorithm], hooks: .5em)[
+#lovelace.pseudocode-list(title: smallcaps[Faddeev-LeVerrier algorithm], hooks: .5em)[
 + *given* an $n times n$ matrix $A$
 + $c_n := 1$
 + $N <- bb(0)$
@@ -89,7 +89,7 @@ Equivalently, $ N_k = N_(k+1) - c_(k+1)II $ gives a descending recurrence relati
 
 == Finding $c_k$ in terms of $A$ and $N_k$
 
-This stroke of genious is due to @hou_classroom_1998.
+This stroke of genious is due to @hou1998.
 
 #fact(title: [Laplace transform of derivative.])[$
 	cal(L){f'(t)}(s)
