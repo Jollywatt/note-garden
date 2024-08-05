@@ -14,11 +14,9 @@ function fadeevleverrier(A::Matrix{T}) where T
 	n = size(A, 1)
 	c = ones(T, n + 1)
 	N = zero(A)
-	k = n - 1
-	while k >= 0
+	for k in reverse(0:n - 1)
 		N = A*N + c[begin + k+1]*I
 		c[begin + k] = tr(A*N)/(k - n)
-		k -= 1
 	end
 	(; inv = -N/c[1], det = (-1)^n*c[1], c)
 end
@@ -28,8 +26,8 @@ function test()
 		for _ = 1:50
 			A = 5randn(n,n)
 			flv = fadeevleverrier(A)
-			@test A*flv.inv ≈ I atol=2e-4
-			@test det(A) ≈ flv.det atol=2e-4
+			@test A*flv.inv ≈ I
+			@test det(A) ≈ flv.det
 		end
 	end
 	nothing

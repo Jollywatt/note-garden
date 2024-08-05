@@ -20,7 +20,7 @@ base(content; title, head="") = """
 
 note(content; title, args...) = base("""
 	<div id="header">
-		Joseph's notes | $title
+		<a href="$ROOT">Joseph's notes</a> ▸ $title
 	</div>
 	<div id="content">
 		$content
@@ -32,7 +32,9 @@ pdf(; title, src) = note("""
 	"""; title)
 
 julia(; title, code) = note("""
-	<pre><code class="language-julia">$code</code></pre>
+	<div class="scroll">
+		<pre><code class="language-julia">$code</code></pre>
+	</div>
 	"""; title, head="""
 	<link rel="stylesheet" href="$ROOT/assets/highlight/styles/default.css">
 	<script src="$ROOT/assets/highlight/highlight.min.js"></script>
@@ -44,7 +46,10 @@ toc(notes) = base("""
 	Welcome to my humble Zettelkasten garden of notes.
 
 	<ul>
-	$(join(["<li><a href=\"$ROOT/$k\">$k</a></li>" for k in keys(notes)]))
+	$(join(
+		"<li><a href=\"$ROOT/$k\">$k</a></li>"
+		for k in keys(notes)
+	))
 	</ul>
 	"""; title = "Home")
 
