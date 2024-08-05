@@ -6,8 +6,11 @@ end
 ROOT = "https://jollywatt.github.io/note-garden"
 
 function template(kind)
-	read("templates/$kind.html", String)
+	raw = read("templates/$kind.html", String)
+
 end
+
+
 
 function substitute(html; kwargs...)
 	for (k, v) in kwargs
@@ -15,8 +18,6 @@ function substitute(html; kwargs...)
 	end
 	html
 end
-
-
 
 
 noext(filename) = replace(filename, r"\.\w+$"=>"")
