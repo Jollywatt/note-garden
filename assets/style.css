@@ -4,7 +4,10 @@ html {
 	--header-size: 20px;
 	background: #7E7E7E;
 	font-family: 'Linux Libertine O', sans-serif;
-	font-size: 10pt;
+}
+
+pre {
+	tab-size: 4;
 }
 
 body {

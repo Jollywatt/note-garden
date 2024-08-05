@@ -1,54 +1,34 @@
+include("templates.jl")
+
 function mkcd(f, path)
 	mkpath(path)
 	cd(f, path)
 end
 
-ROOT = "https://jollywatt.github.io/note-garden"
-
-function template(kind)
-	raw = read("templates/$kind.html", String)
-
-end
-
-
-
-function substitute(html; kwargs...)
-	for (k, v) in kwargs
-		html = replace(html, "{{$k}}"=>v)
-	end
-	html
-end
-
-
 noext(filename) = replace(filename, r"\.\w+$"=>"")
+
 
 function clean()
 	rm("build", recursive=true, force=true)
 end
 
-function makenote(::Val{:pdf}, name, src)
-	run(`ln $src build/`)
-	open("build/$name.html", "w") do f
-		html = substitute(template("pdf"),
-			root=ROOT,
-			title=name,
-			src=basename(src)
-		)
-		write(f, html)
-	end
-end
-
-function getnotes()
+function rendernotes()
 	pages = Dict{String,Any}()
 	for (root, dirs, files) in walkdir("notes/")
 		filter!(!startswith("."), files)
 		for file in files
+			name = noext(file)
 			if endswith(file, ".pdf")
-				name = noext(file)
-				pages[name] = (
-					kind=:pdf,
-					name=name,
-					file=joinpath(root, file),
+				run(`ln $root/$file build/`)
+				pages[name] = Templates.pdf(
+					title=name,
+					src=file,
+				)
+			elseif endswith(file, ".jl")
+				run(`ln $root/$file build/`)
+				pages[name] = Templates.julia(
+					title=name,
+					code=read(joinpath(root, file), String),
 				)
 			end
 		end
@@ -56,34 +36,26 @@ function getnotes()
 	pages
 end
 
-
-function toc(notes)
-	join(["<li><a href=\"/$k.html\">$k</a></li>" for k in keys(notes)])
-end
 function main()
 
 	rm("build", recursive=true, force=true)
 	mkpath("build")
 
-	notes = getnotes()
+	cp("assets", "build/assets")
 
-	for (name, spec) in notes
-		(; kind, name, file) = spec
-		makenote(Val(kind), name, file)
-	end
+	notes = rendernotes()
 
-
-
-	cd("build") do
-		open("index.html", "w") do f
-			write(f, """
-			Welcome to my notes garden thing.
-
-			<ul>
-			$(toc(notes))
-			</ul>
-			""")
+	for (name, html) in notes
+		open("build/$name.html", "w") do f
+			write(f, html)
 		end
 	end
 
+	cd("build") do
+		open("index.html", "w") do f
+			write(f, Templates.toc(notes))
+		end
+	end
+
+	nothing
 end
