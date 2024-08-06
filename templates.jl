@@ -39,11 +39,12 @@ julia(; title, code) = note("""
 	<script>hljs.highlightAll();</script>
 	""")
 
+
 toc(notes) = base("""
 	Welcome to my humble Zettelkasten garden of notes.
 
 	<ul>
-	$(join(["<li><a href=\"$ROOT/$k.html\">$k</a></li>" for k in keys(notes)]))
+	$(join(["<li><a href=\"$ROOT/$k\">$k</a></li>" for k in keys(notes)]))
 	</ul>
 	"""; title = "Home")
 

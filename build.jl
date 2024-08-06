@@ -7,7 +7,6 @@ end
 
 noext(filename) = replace(filename, r"\.\w+$"=>"")
 
-
 function clean()
 	rm("build", recursive=true, force=true)
 end
@@ -36,12 +35,13 @@ function rendernotes()
 	pages
 end
 
-function main()
+function build()
 
 	rm("build", recursive=true, force=true)
 	mkpath("build")
 
 	cp("assets", "build/assets")
+
 
 	notes = rendernotes()
 
