@@ -46,10 +46,9 @@ toc(notes) = base("""
 	Welcome to my humble Zettelkasten garden of notes.
 
 	<ul>
-	$(join(
-		"<li><a href=\"$ROOT/$k\">$k</a></li>"
-		for k in keys(notes)
-	))
+	$(join("""
+		<li><a href="$ROOT/$name">$name</a> ($(info.kind))</li>
+	""" for (name, info) in notes))
 	</ul>
 	"""; title = "Home")
 

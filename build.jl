@@ -11,28 +11,80 @@ function clean()
 	rm("build", recursive=true, force=true)
 end
 
-function rendernotes()
-	pages = Dict{String,Any}()
+function findnotes()
+	notes = Dict{String,@NamedTuple{kind::Symbol, path::String}}()
+
 	for (root, dirs, files) in walkdir("notes/")
 		filter!(!startswith("."), files)
 		for file in files
 			name = noext(file)
-			if endswith(file, ".pdf")
-				run(`ln $root/$file build/`)
-				pages[name] = Templates.pdf(
-					title=name,
-					src=file,
+
+			info = if endswith(file, ".pdf")
+				(
+					kind=:pdf,
+					path=joinpath(root, file),
+				)
+			elseif endswith(file, ".html")
+				(
+					kind=:html,
+					path=joinpath(root, file),
 				)
 			elseif endswith(file, ".jl")
-				run(`ln $root/$file build/`)
-				pages[name] = Templates.julia(
-					title=name,
-					code=read(joinpath(root, file), String),
+				(
+					kind=:julia,
+					path=joinpath(root, file),
 				)
 			end
+
+			isnothing(info) && continue
+
+			name in keys(notes) && @error "Found duplicate name: $name" root*file notes[name]
+
+			notes[name] = info
 		end
 	end
-	pages
+	notes
+end
+
+
+function rendernote(::Val{:pdf}, path, name)
+	src = basename(path)
+	run(`ln $path build/`)
+	open("build/$name.html", "w") do file
+		html = Templates.pdf(
+			title=name,
+			src=src,
+		)
+		write(file, html)
+	end
+end
+
+function rendernote(::Val{:julia}, path, name)
+	src = basename(path)
+	run(`ln $path build/`)
+	open("build/$name.html", "w") do file
+		html = Templates.julia(
+			title=name,
+			code=read(path, String),
+		)
+		write(file, html)
+	end
+end
+
+function rendernote(::Val{:html}, path, name)
+	run(`ln $path build/$name.html`)
+end
+
+permalink(name) = "https://jollywatt.github.io/notes/"*name
+
+function exportpermalinks(notes)
+	path = joinpath(ENV["HOME"], "Documents/typst-notes/permalinks.csv")
+	open(path, "w") do file
+		write(file, "name,url\n")
+		for (name, info) in notes
+			write(file, name, ",", permalink(name), "\n")
+		end
+	end
 end
 
 function build()
@@ -43,12 +95,10 @@ function build()
 	cp("assets", "build/assets")
 
 
-	notes = rendernotes()
+	notes = findnotes()
 
-	for (name, html) in notes
-		open("build/$name.html", "w") do f
-			write(f, html)
-		end
+	for (name, (; kind, path)) in notes
+		rendernote(Val(kind), path, name)
 	end
 
 	cd("build") do
