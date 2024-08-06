@@ -109,3 +109,28 @@ function build()
 
 	nothing
 end
+
+
+function bulkrename()
+	# notes = findnotes()
+
+	# [
+	# 	let path = info.path,
+	# 		dest = replace(path, r"\.\w+$"=>s".note\0")
+	# 		`mv $path $dest`
+	# 	end
+	# 	for (name, info) in notes
+	# ]
+	cmds = Cmd[]
+
+	for (root, dirs, files) in walkdir("notes/")
+		for file in files
+			if endswith(file, ".typ")
+				path = joinpath(root, file)
+				dest = replace(path, r"\.\w+$"=>s".note\0")
+				push!(cmds, `mv $path $dest`)
+			end
+		end
+	end
+	cmds
+end
