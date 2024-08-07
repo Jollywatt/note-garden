@@ -27,8 +27,8 @@ note(content; title, args...) = base("""
 	</div>
 	"""; title, args...)
 
-pdf(; title, src) = note("""
-	<object data="$ROOT/$src" type="application/pdf"/>
+pdf(; title, file) = note("""
+	<object data="$ROOT/$file" type="application/pdf"/>
 	"""; title)
 
 julia(; title, code) = note("""

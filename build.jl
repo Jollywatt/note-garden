@@ -1,78 +1,98 @@
-include("templates.jl")
+if !isdefined(Main, :Revise)
+	const includet = include
+end
+
+includet("templates.jl")
+
 
 function mkcd(f, path)
 	mkpath(path)
 	cd(f, path)
 end
 
-noext(filename) = replace(filename, r"\.\w+$"=>"")
+trimnotesuffix(filename) = replace(filename, ".note."=>".")
 
 function clean()
 	rm("build", recursive=true, force=true)
 end
 
+
+function multinote(byext::Dict{Symbol,String})
+
+	combos = Dict(
+		Set([:typ, :pdf]) => (file=:pdf, src=:typ),
+		Set([:jl, :html]) => (file=:html, src=:jl),
+		Set([:jl]) => (file=:jl, src=nothing),
+	)
+
+	if keys(byext) in keys(combos)
+		roles = combos[keys(byext)]
+		byrole = map(roles) do ext
+			get(byext, ext, nothing)
+		end
+		(kind=roles.file, byrole...)
+	else
+		@error "Can't recognise multi-file note" byext
+	end
+
+end
+
+
+function inbuilddir(srcfile)
+	dest = replace(basename(srcfile), ".note."=>".")
+	run(`ln $srcfile build/$dest`)
+	dest
+end
+
+
 function findnotes()
-	notes = Dict{String,@NamedTuple{kind::Symbol, path::String}}()
+	filesbyname = Dict{String,Dict{Symbol,String}}()
 
 	for (root, dirs, files) in walkdir("notes/")
 		filter!(!startswith("."), files)
 		for file in files
-			name = noext(file)
 
-			info = if endswith(file, ".pdf")
-				(
-					kind=:pdf,
-					path=joinpath(root, file),
-				)
-			elseif endswith(file, ".html")
-				(
-					kind=:html,
-					path=joinpath(root, file),
-				)
-			elseif endswith(file, ".jl")
-				(
-					kind=:julia,
-					path=joinpath(root, file),
-				)
+			m = match(r"^(.*)\.note\.(\w+)$", file)
+			isnothing(m) && continue
+			name, ext = m
+			path = joinpath(root, file)
+
+			if name ∉ keys(filesbyname)
+				filesbyname[name] = Dict()
 			end
-
-			isnothing(info) && continue
-
-			name in keys(notes) && @error "Found duplicate name: $name" root*file notes[name]
-
-			notes[name] = info
+			filesbyname[name][Symbol(ext)] = path
 		end
 	end
-	notes
+
+	sort(Dict(name => multinote(files) for (name, files) in sort(filesbyname)))
 end
 
 
-function rendernote(::Val{:pdf}, path, name)
-	src = basename(path)
-	run(`ln $path build/`)
-	open("build/$name.html", "w") do file
+function rendernote(::Val{:pdf}, name, note)
+	inbuilddir(note.src)
+	pdf = inbuilddir(note.file)
+	open("build/$name.html", "w") do f
 		html = Templates.pdf(
 			title=name,
-			src=src,
+			file=pdf,
 		)
-		write(file, html)
+		write(f, html)
 	end
 end
 
-function rendernote(::Val{:julia}, path, name)
-	src = basename(path)
-	run(`ln $path build/`)
-	open("build/$name.html", "w") do file
+function rendernote(::Val{:jl}, name, note)
+	file = inbuilddir(note.file)
+	open("build/$name.html", "w") do f
 		html = Templates.julia(
 			title=name,
-			code=read(path, String),
+			code=read(joinpath("build", file), String),
 		)
-		write(file, html)
+		write(f, html)
 	end
 end
 
-function rendernote(::Val{:html}, path, name)
-	run(`ln $path build/$name.html`)
+function rendernote(::Val{:html}, name, note)
+	inbuilddir(note.file)
 end
 
 permalink(name) = "https://jollywatt.github.io/notes/"*name
@@ -88,17 +108,16 @@ function exportpermalinks(notes)
 end
 
 function build()
-
 	rm("build", recursive=true, force=true)
 	mkpath("build")
 
 	cp("assets", "build/assets")
 
-
 	notes = findnotes()
 
-	for (name, (; kind, path)) in notes
-		rendernote(Val(kind), path, name)
+	for (name, note) in notes
+		@info "Rendering note" name
+		rendernote(Val(note.kind), name, note)
 	end
 
 	cd("build") do
@@ -108,29 +127,4 @@ function build()
 	end
 
 	nothing
-end
-
-
-function bulkrename()
-	# notes = findnotes()
-
-	# [
-	# 	let path = info.path,
-	# 		dest = replace(path, r"\.\w+$"=>s".note\0")
-	# 		`mv $path $dest`
-	# 	end
-	# 	for (name, info) in notes
-	# ]
-	cmds = Cmd[]
-
-	for (root, dirs, files) in walkdir("notes/")
-		for file in files
-			if endswith(file, ".typ")
-				path = joinpath(root, file)
-				dest = replace(path, r"\.\w+$"=>s".note\0")
-				push!(cmds, `mv $path $dest`)
-			end
-		end
-	end
-	cmds
 end
